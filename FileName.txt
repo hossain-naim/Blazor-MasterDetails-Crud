@@ -1,0 +1,7 @@
+DESKTOP-7P7SQ2H\MSSQLSERVER01
+
+naim@gmail.com
+
+Blazor4140@
+
+update aspnetusers set emailconfirmed=1

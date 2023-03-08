@@ -1,0 +1,232 @@
+﻿<h2>Quantanite IT Service Provider</h2>
+<h4>Repair & Servicing Details</h4>
+<style>
+    h2,h4{text-align:center}
+</style>
+@page "/AppointmentService"
+@using BlazorAppMasterCrud.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
+
+@inject AppointmentService mdService
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment env
+
+<div class="container">
+    <div class="row">
+
+        <div class="col-sm-6">
+            @*<h2>Repair Orders</h2>*@
+            <hr/>
+            <div class="form-group">
+                <label for="Appointment_ID" class="control-label">Order No</label>
+                <input id="Appointment_ID" class="form-control" @bind="@mas.Appointment_ID" @bind:event="oninput" @onkeyup="@(()=>Get2Tables())" />
+            </div>
+            <div class="form-group">
+                <label for="Appointment_Name" class="control-label">Name of Concerns</label>
+                <input id="Appointment_Name" class="form-control" @bind="@mas.Appointment_Name" />
+            </div>
+            <div class="form-group">
+                <label for="date" class="control-label">Delivery Date</label>
+                <input type="date"input id="Date" class="form-control" @bind="@mas.Date" />
+            </div>
+            <div class="form-group">
+                <label for="Phone" class="control-label">Contact</label>
+                <input id="Phone" class="form-control" @bind="@mas.Phone" />
+            </div>
+            <hr />
+        </div>
+        
+        <div class="col-sm-6">
+            @*<h2>Service</h2>*@
+            <hr/>
+            <div class="form-group">
+                <label for="Service_ID" class="control-label">Machine No</label>
+                <input id="Service_ID" name="Service_ID" @bind="@obj.Service_ID" class="form-control" @onkeyup="@Child_Exists" />
+                <div id="slerror" style="color:red">@error</div>
+            </div>
+
+            <div class="form-group">
+                <label for="Service_Name" class="control-label">Servicing Details</label>
+                <input id="Service_Name" @bind="@obj.Service_Name" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="Service_Fee" class="control-label">Total Charge</label>
+                <input id="Service_Fee" @bind="@obj.Service_Fee" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="Picture" class="control-label">Photo</label>
+                <input id="Picture" @bind="@obj.Picture" class="form-control" />
+                <InputFile OnChange="@SingleUpload" id="Picture" class="btn-primary" />
+            </div>
+            <hr />
+            <div class="form-group">
+                <input type="button" value="Add" @onclick="@Add" class="btn btn-primary" />
+                <input type="button" value="Update" @onclick="@Update" class="btn btn-primary" />
+            </div>
+            <br/>
+        </div>
+    </div>
+
+    <div class="col-sm-12">
+        <h4>Service Detail</h4>
+        <table id="Service" class="table">
+            <thead>
+                <tr><th>SlNo</th><th>Machine No</th><th>Servicing_Details</th><th>Total_Charge</th><th>Photo</th><th></th></tr>
+
+            </thead>
+
+            <tbody>
+                @if (det is null)
+                {
+                    <p><em>Loading... !</em></p>
+                }
+                else
+                {
+                    int index = 1;
+                    @foreach (var a in det)
+                    {
+                        int sl2 = index - 1;
+                        <tr>
+                            <td>@index</td>
+                            <td>@a.Service_ID</td>
+                            <td>@a.Service_Name</td>
+                            <td>@a.Service_Fee</td>
+                            <td><img src="/uploads/@a.Picture" width="100" /></td>
+                            <td>
+                                <a class="nav-link" @onclick="@(() =>Show(@a.Service_ID,@a.Service_Name,@sl2,@a.Service_Fee,@a.Picture))">
+                                    <span class="oi oi-pencil" aria-hidden="true">@index Edit</span>
+                                </a>
+                                <a class="nav-link" @onclick="@(()=>Delete(@a.Service_ID))">
+                                    <span class="oi oi-trash" aria-hidden="true">Delete</span>
+                                </a>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+       
+        <div style="text-align:center;">
+            <button type="button" class="btn btn-primary" @onclick="@CreateCustomer">Save</button>
+            <button type="button" class="btn btn-info" @onclick="@UpdateCustomer">Update</button>
+            <button type="button" class="btn btn-danger" @onclick="@DeleteCustomer">Delete</button>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    List<Service> det = new List<Service>();
+    int sl = 0;
+    Service obj = new Service();
+    Appointment mas = new Appointment();
+    string error = "";
+    protected override async Task OnInitializedAsync()
+    {
+        mas.Appointment_ID = mdService.GenerateCode();
+    }
+    protected async void CreateCustomer()
+    {
+        AppointmentServiceVm md = new AppointmentServiceVm();
+        md.Appointment = mas;
+        md.Service = det;
+        mdService.AddAppointmentServiceVm(md);
+        Refresh();
+        mas.Appointment_ID = mdService.GenerateCode();
+    }
+    protected async void Add()
+    {
+        det.Add(new Service() { Service_ID = obj.Service_ID, Service_Name = obj.Service_Name, Appointment_ID = mas.Appointment_ID, Service_Fee = obj.Service_Fee, Picture = obj.Picture });
+        InvokeAsync(() => { StateHasChanged(); });
+
+    }
+    protected async void Update()
+    {
+        det[sl].Service_ID = obj.Service_ID;
+        det[sl].Service_Name = obj.Service_Name;
+        det[sl].Service_Fee = obj.Service_Fee;
+        det[sl].Picture = obj.Picture;
+        InvokeAsync(() => { StateHasChanged(); });
+    }
+    protected async void Delete(string id)
+    {
+        var d = (from a in det
+                 where a.Service_ID == id
+                 select a).First();
+        det.Remove(d);
+        InvokeAsync(() => { StateHasChanged(); });
+    }
+    public async void Refresh()
+    {
+
+        det.Clear();
+        obj = new Service();
+        mas = new Appointment();
+        InvokeAsync(() => { StateHasChanged(); });
+    }
+    protected async void UpdateCustomer()
+    {
+        AppointmentServiceVm md = new AppointmentServiceVm();
+        md.Appointment = mas;
+        md.Service = det;
+        mdService.UpdateAppointmentServiceVm(md);
+        Refresh();
+        mas.Appointment_ID = mdService.GenerateCode();
+    }
+    protected async void DeleteCustomer()
+    {
+        mdService.RemoveAppointmentServiceVm(mas.Appointment_ID);
+        Refresh();
+        mas.Appointment_ID = mdService.GenerateCode();
+    }
+    protected async void Get2Tables()
+    {
+        AppointmentServiceVm md = new AppointmentServiceVm();
+        md = mdService.GetTwoTables2(mas.Appointment_ID);
+        if (md.Appointment != null) mas = md.Appointment;
+        if (md.Service.Count > 0)
+            det = md.Service;
+        else
+            det.Clear();
+        InvokeAsync(() => { StateHasChanged(); });
+    }
+    protected async void Show(string a, string b, int sl1, string c, string d)
+    {
+        obj.Service_ID = a;
+        obj.Service_Name = b;
+        sl = sl1;
+        obj.Service_Fee = c;
+        obj.Picture = d;
+    }
+    string Message = "No file(s) selected";
+    IReadOnlyList<IBrowserFile> selectedFiles;
+    private async Task SingleUpload(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        foreach (var file in selectedFiles)
+        {
+            Stream stream = file.OpenReadStream();
+            var path = $"{env.WebRootPath}\\uploads\\{file.Name}";
+            FileStream fs = File.Create(path);
+            await stream.CopyToAsync(fs);
+            obj.Picture = file.Name;
+            stream.Close();
+            fs.Close();
+        }
+        this.StateHasChanged();
+    }
+    protected async void Child_Exists()
+    {
+        int a = mdService.Child_Exists(obj.Service_ID);
+        if (a == 1)
+            error = "Exists";
+        else
+            error = "";
+    }
+}
+
+

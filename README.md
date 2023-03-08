@@ -1,2 +1,2 @@
 # Blazor-MasterDetails-Crud
- Blazor Server Applocation
+ Blazor Server Application
